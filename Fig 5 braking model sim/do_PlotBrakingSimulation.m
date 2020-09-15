@@ -59,25 +59,39 @@ c_VPOVMaxDecelerations = [.15*9.81  8]; % m/s^2
 c_accumulatorGating = 0.0155;
 c_accumulatorThreshold = 0.0888;
 
+% get the "burst" function describing the brake pedal rate in one pedal adjustment - as a truncated Gaussian
+% - time from brake adjustment decision to burst start
 c_burstOnsetTime = 0;
+% - time from brake adjustment decision to burst peak
 c_burstPeakTime = 0.1;
+% - number of std devs to include in the truncated Gaussian
 c_burstStdDevsToInclude = 2;
+% - get a Gaussian with correct location and scale - across the entire simulation time stamp vector
+% - (will later be placed at the correct locations within the simulation)
 c_burstFunction = normpdf(t, c_burstPeakTime, ...
   (c_burstPeakTime - c_burstOnsetTime) / c_burstStdDevsToInclude);
+% - shift downward so that it starts from zero rate of pedal change instead of from a positive value
 c_burstFunction = c_burstFunction - c_burstFunction(find(t >= c_burstOnsetTime, 1, 'first'));
 c_burstFunction(c_burstFunction < 0) = 0;
+% - renormalise so that it still integrates to unity
 c_burstFunction = c_burstFunction / trapz(t, c_burstFunction);
 
+
+% gain from inverse tau prediction error to 
 c_brakePedalGain = 2.5;
 
 
-% error prediction
-c_errorStartsDisappearingTime = 0;%0;
-c_errorDisappearedTime = 9;%20;
+% error prediction function
+% - how long after brake adjustment decision do we expect the prediction error to start disappearing
+c_errorStartsDisappearingTime = 0;
+% - ... and when do we expect it to have disappeared
+c_errorDisappearedTime = 9;
+% - also the error prediction function is constructed from a truncated Gaussian
 c_errorPredictionStdDevsToInclude = 3;
 c_errorPredictionFunction = GetErrorPredictionFunction(...
   t, c_errorStartsDisappearingTime, c_errorDisappearedTime, c_errorPredictionStdDevsToInclude);
 
+% uncomment this to see what it looks like 
 % plot(t, c_errorPredictionFunctionAngleControl)
 
 
